@@ -58,4 +58,8 @@ cuda_add_executable(
         matrixmul
         test.cpp matrixmul.cu utils.cu)
 target_link_libraries(matrixmul ${OpenCV_LIBS})
+target_link_libraries(matrixmul /usr/local/cuda-8.0/lib64/libcublas.so ${OpenCV_LIBS})
 
+
+#cuda_add_executable(cublas_test cublas_test.cpp)
+#target_link_libraries(cublas_test /usr/local/cuda-8.0/lib64/libcublas.so)

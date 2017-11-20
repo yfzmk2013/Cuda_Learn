@@ -10,4 +10,5 @@
 int main(){
     squaresum();
     return 0;
+
 }

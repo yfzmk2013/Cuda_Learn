@@ -3,6 +3,14 @@
 //#include "utils.h"
 #include <iostream>
 #include "matrixmul.h"
+
+
+#include <cublas_v2.h> //cuda自带库函数
+//#include "helper_cuda.h"
+#include <stdio.h>
+#include <cuda_runtime_api.h>
+
+
 // ======== define area ========
 #define DATA_SIZE 1048576 // 1M
 
@@ -158,11 +166,46 @@ cudaError_t addWithCuda(float *c, const float *a, const float *b, unsigned int W
 
     // Launch a kernel on the GPU with one thread for each element.
     if (mode == Mode1) {
+        clock_t time_used;
+        clock_t start = clock();
+
         MatrixMulGPU_1 << < Blocks, Threads >> > (dev_c, dev_a, dev_b, WA, WB);
+        time_used = clock() - start;
+       // printf("(GPU1) time:%ld\n", time_used);
     }
 
     if (mode == Mode2) {
+
+        clock_t time_used;
+        clock_t start = clock();
         MatrixMulGPU_2<16> << < Blocks, Threads >> > (dev_c, dev_a, dev_b, WA, WB);
+        time_used = clock() - start;
+        //printf("(GPU2) time:%ld\n", time_used);
+    }
+
+    if(mode==Mode3){
+        cublasHandle_t handle;
+        cublasCreate(&handle);
+        float alpha = 1.0;
+        float beta = 0.0;
+        fprintf(stderr, "aaaaaaaaaaaaaa!");
+        clock_t start = clock();
+
+
+        clock_t time_used;
+
+        cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,WA, HA, WB, &alpha, dev_b, HA, dev_a, HA, &beta, dev_c, HA);
+
+
+        time_used = clock() - start;
+        printf("(GPU3) time:%ld\n", time_used);
+
+//        if (cudaStatus != cudaSuccess) {
+//            fprintf(stderr, "cudaMemcpy failed!");
+//            //goto Error;
+//        }
+
+
     }
 
     // Check for any errors launching the kernel

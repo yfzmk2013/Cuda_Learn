@@ -59,9 +59,9 @@ void printMatrix(float *m_Matrix, int W, int H) {
 bool CheckAnswer(const float *_C, const float *_D, unsigned int size) {
     bool isRight = true;
     for (int i = 0; i < size && isRight == true; ++i) {
-        if (abs(_C[i] - _D[i])>=0.0000000000001) {
+        if (abs(_C[i] - _D[i]) >= 0.0000000000001) {
             isRight = false;
-            printf("%d,%d,%f,%f\n",size,i, _C[i], _D[i]);
+            printf("%d,%d,%f,%f\n", size, i, _C[i], _D[i]);
             //break;
         }
     }
@@ -70,22 +70,26 @@ bool CheckAnswer(const float *_C, const float *_D, unsigned int size) {
 }
 
 int main() {
-    const int width_A = 2048;
-    const int height_A = 2048;
-    const int width_B = 2048;
-    const int height_B = 2048;
+    const int width_A = 8092;
+    const int height_A = 8092;
+    const int width_B = 8092;
+    const int height_B = 8092;
 
-    float *B = (float *) calloc( height_B * width_B,sizeof(float));
-    float *A = (float *) calloc( height_A * width_A,sizeof(float));
-    float *C = (float *) calloc(height_A * width_B,sizeof(float));
-    float *D = (float *) calloc(height_A * width_B,sizeof(float));
-    float *E = (float *) calloc(height_A * width_B,sizeof(float));
+    float *B = (float *) calloc(height_B * width_B, sizeof(float));
+    float *A = (float *) calloc(height_A * width_A, sizeof(float));
+    float *C = (float *) calloc(height_A * width_B, sizeof(float));
+    float *D = (float *) calloc(height_A * width_B, sizeof(float));
+    float *E = (float *) calloc(height_A * width_B, sizeof(float));
+    float *F = (float *) calloc(height_A * width_B, sizeof(float));
+
 
     memset(A, 0.0, sizeof(float) * height_A * width_A);
     memset(B, 0.0, sizeof(float) * height_B * width_B);
     memset(C, 0.0, sizeof(float) * height_A * width_B);
     memset(D, 0.0, sizeof(float) * height_A * width_B);
     memset(E, 0.0, sizeof(float) * height_A * width_B);
+    memset(F, 0.0, sizeof(float) * height_A * width_B);
+
 
 
     //产生随机数生成器
@@ -97,11 +101,11 @@ int main() {
     //printMatrix(B, width_B, height_B);
     //printMatrix(A, width_A, height_A);
 
-    clock_t time_used;
+    //clock_t time_used;
 
     //CPU 计算
     //double Time = (double) cvGetTickCount();
-    clock_t start = clock();
+    //clock_t start = clock();
 
 //    MatrixMulCPU(C, A, B, width_A, height_A, width_B, height_B);
 ////    Time = (double) cvGetTickCount() - Time;
@@ -114,7 +118,7 @@ int main() {
     Type m_Mode = Mode1;
 
     //Time = (double) cvGetTickCount();
-    start = clock();
+    //start = clock();
     double Time = (double) cvGetTickCount();
 
     cudaError_t cudaStatus = addWithCuda(D, A, B, width_A, height_A, width_B, height_B, m_Mode);
@@ -122,25 +126,51 @@ int main() {
         fprintf(stderr, "addWithCuda failed!\n");
         return 1;
     }
-     Time = (double) cvGetTickCount() - Time;
+    Time = (double) cvGetTickCount() - Time;
     printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));
 
 
-    time_used = clock() - start;
-    printf("(GPU1) time:%ld\n", time_used);
+    //time_used = clock() - start;
+    //printf("(GPU1) time:%ld\n", time_used);
 
 //    Time = (double) cvGetTickCount() - Time;
 //    printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));//
 
+
     m_Mode = Mode2;
-    start = clock();
+    Time = (double) cvGetTickCount();
     cudaStatus = addWithCuda(E, A, B, width_A, height_A, width_B, height_B, m_Mode);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "addWithCuda failed!\n");
         return 1;
     }
-    time_used = clock() - start;
-    printf("(GPU2) time:%ld\n", time_used);
+
+
+//    time_used = clock() - start;
+//    printf("(GPU2) time:%ld\n", time_used);
+
+    Time = (double) cvGetTickCount() - Time;
+    printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));
+
+
+    m_Mode = Mode3;
+    Time = (double) cvGetTickCount();
+    cudaStatus = addWithCuda(F, A, B, width_A, height_A, width_B, height_B, m_Mode);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "addWithCuda failed!\n");
+        return 1;
+    }
+
+
+//    time_used = clock() - start;
+//    printf("(GPU2) time:%ld\n", time_used);
+
+    Time = (double) cvGetTickCount() - Time;
+    printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));
+
+    if (!CheckAnswer(D, E, height_A * width_B)&& !CheckAnswer(F, E, height_A * width_B))
+        printf("The answer is wrong!\n");
+    else printf("The answer is right!\n");
 
     //检查GPU, CPU 计算的结果是否相同
 //    if (!CheckAnswer(C, D, height_A * width_B) && !CheckAnswer(C, E, height_A * width_B))

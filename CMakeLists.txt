@@ -1,1 +1,2 @@
-add_subdirectory(squaresum_demo)
+add_subdirectory(MatrixMul)
+add_subdirectory(mul_blas_sse)

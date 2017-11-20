@@ -38,6 +38,9 @@
 cmake_minimum_required(VERSION 2.8)
 find_package(CUDA QUIET REQUIRED)
 
+
+
+
 # Specify binary name and source file to build it from
 #add_library(utils utils.cpp)
 cuda_add_executable(
