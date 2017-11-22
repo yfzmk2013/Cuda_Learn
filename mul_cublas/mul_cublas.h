@@ -10,7 +10,7 @@ extern "C" {
 void run(const cublasHandle_t &handle,const cudaStream_t&stream,float *a,float*b,float *c);
 cublasStatus_t addWithCuda(const cublasHandle_t &handle,float *c, const float *a, const float *b, unsigned int WA, unsigned int HA, unsigned int WB,
                         unsigned int HB);
-cublasStatus_t addWithCuda2(const cublasHandle_t &handle,float *c, const float *a, const float *b, unsigned int WA, unsigned int HA, unsigned int WB,
+cublasStatus_t addWithCuda5(const cublasHandle_t &handle,float *c, const float *a, const float *b, unsigned int WA, unsigned int HA, unsigned int WB,
                             unsigned int HB);
 }
 #endif //PROJECT_MUL_CUBLAS_H

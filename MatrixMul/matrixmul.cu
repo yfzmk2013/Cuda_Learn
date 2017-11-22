@@ -288,7 +288,7 @@ cublasStatus_t addWithCuda2(const cublasHandle_t &handle,float *c, const float *
     clock_t time_used = clock() - start;
     printf("(GPU31) time:%ld\n", time_used);
     cudaThreadSynchronize();
-    cublasGetVector(HA * WB, sizeof(float), dev_c, 1,c, 1);
+    cublasGetVector(HA * HB, sizeof(float), dev_c, 1,c, 1);
     //Error:
     cudaFree(dev_c);
     cudaFree(dev_a);

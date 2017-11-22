@@ -87,19 +87,19 @@ addWithCuda3(const cublasHandle_t &handle, float *c, const float *a, const float
     // Allocate GPU buffers for three vectors (two input, one output)    .
     cudaStatus = cudaMalloc((void **) &dev_c, HA * WB * sizeof(float));
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         // Error;
     }
 
     cudaStatus = cudaMalloc((void **) &dev_a, HA * WA * sizeof(float));
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         //goto Error;
     }
 
     cudaStatus = cudaMalloc((void **) &dev_b, HB * WB * sizeof(float));
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         //goto Error;
     }
 
@@ -108,17 +108,17 @@ addWithCuda3(const cublasHandle_t &handle, float *c, const float *a, const float
 
     cudaStatus = cudaMemcpy(dev_a, &a, HA * WA * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         //goto Error;
     }
     cudaStatus = cudaMemcpy(dev_b, &b, HB * WB * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         //goto Error;
     }
-    cudaStatus = cudaMemset(dev_c,0,sizeof(HB*HA));
+    cudaStatus = cudaMemset(dev_c, 0, sizeof(HB * HA));
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         //goto Error;
     }
 
@@ -142,7 +142,6 @@ addWithCuda3(const cublasHandle_t &handle, float *c, const float *a, const float
     }
 
 
-
     clock_t time_used = clock() - start;
     printf("(GPU31) time:%ld\n", time_used);
     //cudaThreadSynchronize();
@@ -150,7 +149,7 @@ addWithCuda3(const cublasHandle_t &handle, float *c, const float *a, const float
 
     cudaStatus = cudaMemcpy(c, dev_c, HA * HB * sizeof(float), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        printf( "cudaMalloc failed!");
+        printf("cudaMalloc failed!");
         //goto Error;
     }
 
@@ -239,33 +238,82 @@ int main() {
 
 #if 1
 
-    //const int width_A = 4096;
-    //const int height_A = 4096;
-    //const int width_B = 4096;
-    //const int height_B = 4096;
+    const int WA = 3000;
+    const int HA = 100000;
+    const int WB = 3000;
+    const int HB = 5000;
+    printf("aaa\n");
 
-    float A[4] = {0.1, 0.2, 0.3, 0.4};
-    float B[4] = {0.1, 0.3, 0.9, 0.2};
-    float *C= (float *) malloc(4 * sizeof(float));
-    memset(C,0.0,4 * sizeof(float));
+//    float A[WA * HA] = {1, 2, 3,
+//                        4, 5, 6};
+//
+//    float B[WB * HB] = {1, 3, 9,
+//                        2, 1, 1,
+//                        3, 2, 5,
+//                        0, 2, 8
+//    };
 
-    cublasHandle_t handle;
+    float *B = (float *) calloc(HB * WB, sizeof(float));
+    float *A = (float *) calloc(HA * WA, sizeof(float));
+    float *C = (float *) calloc(HA * WB, sizeof(float));
+    if(!B||!A||!C){
+        printf("err!\n");
+        exit(-1);
+    }
+    //float *D = (float *) calloc(HA * WB, sizeof(float));
+    //float *E = (float *) calloc(HA * WB, sizeof(float));
+    //float *F = (float *) calloc(height_A * width_B, sizeof(float));
+
+
+   // memset(A, 0.0, sizeof(float) * height_A * width_A);
+    //memset(B, 0.0, sizeof(float) * height_B * width_B);)
+    printf("aaa\n");
+    //float *C = (float *) malloc(HA * HB * sizeof(float));
+
+    memset(C, 0.0, HA * HB * sizeof(float));
+    srand((unsigned) clock());
+    randomInit(B, HB * WB);
+    randomInit(A, HA * WA);
+
+    cudaError_t cudaStatus;
+    //cublasStatus_t cublasStatus;
+    cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+        return -1;
+    }
     cublasStatus_t cublasStatus;
 
+    cublasHandle_t handle;
+    cublasStatus = cublasCreate(&handle);
 
-    cublasCreate(&handle);
+
+    printf("ccccccccccccccccc!\n");
     if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
         if (cublasStatus == CUBLAS_STATUS_NOT_INITIALIZED) {
             printf("CUBLAS 对象实例化出错\n");
         }
+        printf("CUBLAS 对象实例化出错\n");
+
         return -1;
     }
+    printf("ccccccccccccccccc!\n");
 
-    cublasStatus = addWithCuda2(handle, C, A, B, 2, 2, 2, 2);
+    cublasStatus = addWithCuda5(handle, C, A, B, WA, HA, WB, HB);
 
-    printMatrix(A, 2, 2);
-    printMatrix(B, 2, 2);
-    printMatrix(C, 2, 2);
+//    printMatrix(A, WA, HA);
+//    printMatrix(B, WB, HB);
+//    printMatrix(C, HB, HA);
+
+
+
+    cublasDestroy(handle);
+
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+        return 1;
+    }
 
 
 #endif
