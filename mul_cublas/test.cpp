@@ -52,7 +52,7 @@ void randomInit(float *_data, int _size) {
 void printMatrix(float *m_Matrix, int W, int H) {
     for (int i = 0; i < W * H; ++i) {
         printf("%2.1f ", m_Matrix[i]);
-        if (i % W == 0 && i != 0) printf("\n");
+        if ((i + 1) % W == 0 && i != 0) printf("\n");
     }
     printf("\n");
 }
@@ -70,9 +70,101 @@ bool CheckAnswer(const float *_C, const float *_D, unsigned int size) {
     return isRight;
 }
 
+
+cublasStatus_t
+addWithCuda3(const cublasHandle_t &handle, float *c, const float *a, const float *b, unsigned int WA, unsigned int HA,
+             unsigned int WB,
+             unsigned int HB) {
+
+    float *dev_a = 0;
+    float *dev_b = 0;
+    float *dev_c = 0;
+    cudaError_t cudaStatus;
+    cublasStatus_t cublasStatus;
+
+
+    printf("aaaaaaaaaaa!\n");
+    // Allocate GPU buffers for three vectors (two input, one output)    .
+    cudaStatus = cudaMalloc((void **) &dev_c, HA * WB * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        // Error;
+    }
+
+    cudaStatus = cudaMalloc((void **) &dev_a, HA * WA * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        //goto Error;
+    }
+
+    cudaStatus = cudaMalloc((void **) &dev_b, HB * WB * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        //goto Error;
+    }
+
+    //cublasSetVector(HA * WA, sizeof(float), a,1, dev_a, 1);
+    //cublasSetVector(HB * WB, sizeof(float), b, 1, dev_b, 1);
+
+    cudaStatus = cudaMemcpy(dev_a, &a, HA * WA * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        //goto Error;
+    }
+    cudaStatus = cudaMemcpy(dev_b, &b, HB * WB * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        //goto Error;
+    }
+    cudaStatus = cudaMemset(dev_c,0,sizeof(HB*HA));
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        //goto Error;
+    }
+
+    // 同步函数
+    //cudaThreadSynchronize();
+
+    float alpha = 1.0;
+    float beta = 0.0;
+    clock_t start = clock();
+
+    printf("%d,%d,%d,%d\n", HA, HB, WA, WB);
+    cublasStatus = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, HB, HA, WB, &alpha, dev_b, HA, dev_a, HA, &beta, dev_c,
+                               HA);
+
+    if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
+//        if (cublasStatus == CUBLAS_STATUS_NOT_INITIALIZED) {
+//            printf("CUBLAS 对象实例化出错\n");
+//        }
+
+        printf("errror!\n");
+    }
+
+
+
+    clock_t time_used = clock() - start;
+    printf("(GPU31) time:%ld\n", time_used);
+    //cudaThreadSynchronize();
+    //cublasGetVector(HA * WB, sizeof(float), c, 1, dev_c, 1);
+
+    cudaStatus = cudaMemcpy(c, dev_c, HA * HB * sizeof(float), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        printf( "cudaMalloc failed!");
+        //goto Error;
+    }
+
+    //Error:
+    cudaFree(dev_c);
+    cudaFree(dev_a);
+    cudaFree(dev_b);
+    printf("ok!\n");
+    return cublasStatus;
+}
+
 int main() {
 
-
+#if 0
     const int width_A = 4096;
     const int height_A = 4096;
     const int width_B = 4096;
@@ -96,7 +188,7 @@ int main() {
 
     // cudaError_t cudaStatus;
     cublasStatus_t cublasStatus;
-//    cudaStatus = cudaSetDevice(0);
+    cudaStatus = cudaSetDevice(0);
 //    if (cudaStatus != cudaSuccess) {
 //        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
 //        return -1;
@@ -120,7 +212,7 @@ int main() {
     randomInit(A, height_A * width_A);
 
 
-#if 1
+
 
     double Time = (double) cvGetTickCount();
     Time = (double) cvGetTickCount();
@@ -142,62 +234,39 @@ int main() {
 
     // 释放 CUBLAS 库对象
     cublasDestroy (handle);
+
 #endif
 
+#if 1
 
-#if 0
+    //const int width_A = 4096;
+    //const int height_A = 4096;
+    //const int width_B = 4096;
+    //const int height_B = 4096;
 
-    float *dev_a = 0;
-    float *dev_b = 0;
-    float *dev_c = 0;
-    cudaError_t cudaStatus;
-    //cublasStatus_t cublasStatus;
-    int HA = height_A;
-    int WB = height_B;
-    int WA = width_A;
-    int HB = height_B;
+    float A[4] = {0.1, 0.2, 0.3, 0.4};
+    float B[4] = {0.1, 0.3, 0.9, 0.2};
+    float *C= (float *) malloc(4 * sizeof(float));
+    memset(C,0.0,4 * sizeof(float));
+
+    cublasHandle_t handle;
+    cublasStatus_t cublasStatus;
 
 
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void **) &dev_c, HA * WB * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        // Error;
+    cublasCreate(&handle);
+    if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
+        if (cublasStatus == CUBLAS_STATUS_NOT_INITIALIZED) {
+            printf("CUBLAS 对象实例化出错\n");
+        }
+        return -1;
     }
 
-    cudaStatus = cudaMalloc((void **) &dev_a, HA * WA * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        //goto Error;
-    }
+    cublasStatus = addWithCuda2(handle, C, A, B, 2, 2, 2, 2);
 
-    cudaStatus = cudaMalloc((void **) &dev_b, HB * WB * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        //goto Error;
-    }
+    printMatrix(A, 2, 2);
+    printMatrix(B, 2, 2);
+    printMatrix(C, 2, 2);
 
-    cublasSetVector(HA * WA, sizeof(float), A, 1, dev_a, 1);
-    cublasSetVector(HB * WB, sizeof(float), B, 1, dev_b, 1);
-    // 同步函数
-    cudaThreadSynchronize();
-
-    float alpha = 1.0;
-    float beta = 0.0;
-    double Time = (double) cvGetTickCount();
-    //cublasStatus = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,WA, HA, WB, &alpha, dev_b, HA, dev_a, HA, &beta, dev_c, HA);
-    cublasStatus = addWithCuda2(handle, dev_c, dev_a, dev_b, WA, HA, WB, HB);
-
-    Time = (double) cvGetTickCount() - Time;
-    printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));
-
-    cudaThreadSynchronize();
-    cublasGetVector(HA * WB, sizeof(float), C, 1, dev_c, 1);
-    //Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-    return cublasStatus;
 
 #endif
     return 0;

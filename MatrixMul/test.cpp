@@ -59,7 +59,9 @@ void printMatrix(float *m_Matrix, int W, int H) {
 bool CheckAnswer(const float *_C, const float *_D, unsigned int size) {
     bool isRight = true;
     for (int i = 0; i < size && isRight == true; ++i) {
-        if (abs(_C[i] - _D[i]) >= 0.0000000000001) {
+        //printf("%f,%f\n", _C[i], _D[i]);
+
+        if (abs(_C[i] - _D[i]) >= 0.00000000000000000000000001) {
             isRight = false;
             printf("%d,%d,%f,%f\n", size, i, _C[i], _D[i]);
             //break;
@@ -70,10 +72,10 @@ bool CheckAnswer(const float *_C, const float *_D, unsigned int size) {
 }
 
 int main() {
-    const int width_A = 8092;
-    const int height_A = 8092;
-    const int width_B = 8092;
-    const int height_B = 8092;
+    const int width_A = 128;
+    const int height_A = 128;
+    const int width_B = 128;
+    const int height_B = 128;
 
     float *B = (float *) calloc(height_B * width_B, sizeof(float));
     float *A = (float *) calloc(height_A * width_A, sizeof(float));
@@ -153,14 +155,39 @@ int main() {
     printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));
 
 
-    m_Mode = Mode3;
-    Time = (double) cvGetTickCount();
-    cudaStatus = addWithCuda(F, A, B, width_A, height_A, width_B, height_B, m_Mode);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addWithCuda failed!\n");
-        return 1;
+    //m_Mode = Mode3;
+
+    cublasStatus_t cublasStatus;
+//    cudaStatus = cudaSetDevice(0);
+//    if (cudaStatus != cudaSuccess) {
+//        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+//        return -1;
+//    }
+
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+
+    if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
+        if (cublasStatus == CUBLAS_STATUS_NOT_INITIALIZED) {
+            //cout << "CUBLAS 对象实例化出错" << endl;
+        }
+        getchar();
+        printf("hello,is r\n");
+        return -1;
     }
 
+    Time = (double) cvGetTickCount();
+//    cudaStatus = addWithCuda(F, A, B, width_A, height_A, width_B, height_B, m_Mode);
+//    if (cudaStatus != cudaSuccess) {
+//        fprintf(stderr, "addWithCuda failed!\n");
+//        return 1;
+//    }
+
+    cublasStatus = addWithCuda2(handle, F, A, B, width_A, height_A, width_B, height_B);
+    if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
+        fprintf(stderr, "addWithCuda failmaed!\n");
+        return -1;
+    }
 
 //    time_used = clock() - start;
 //    printf("(GPU2) time:%ld\n", time_used);
@@ -168,7 +195,11 @@ int main() {
     Time = (double) cvGetTickCount() - Time;
     printf("run time = %gms\n", Time / (cvGetTickFrequency() * 1000));
 
-    if (!CheckAnswer(D, E, height_A * width_B)&& !CheckAnswer(F, E, height_A * width_B))
+//    for (int i = 0; i <100 ; ++i) {
+//        printf("%f,%f\n",D[i],F[i]);
+//    }
+
+    if (!CheckAnswer(D, F, height_A * width_B) /*&& !CheckAnswer(D, F, height_A * width_B)*/)
         printf("The answer is wrong!\n");
     else printf("The answer is right!\n");
 
@@ -179,11 +210,15 @@ int main() {
 
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
+
     cudaStatus = cudaDeviceReset();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaDeviceReset failed!");
         return 1;
     }
+
+
+    //printMatrix(F,100,100);
 
     return 0;
 }

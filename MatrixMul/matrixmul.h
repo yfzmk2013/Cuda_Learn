@@ -7,6 +7,8 @@
 
 #include "utils.h"
 #include <cuda_runtime.h>
+#include <cublas_v2.h> //cuda自带库函数
+
 //用于指示不同的GPU 优化版本
 enum Type {
     Mode1 = 1,   //Mode 1 :将每一个C[i][j]都分别分配一个线程
@@ -19,6 +21,9 @@ enum Type {
 extern "C" {
 cudaError_t addWithCuda(float *c, const float *a, const float *b, unsigned int WA, unsigned int HA, unsigned int WB,
                         unsigned int HB, Type mode);
+cublasStatus_t addWithCuda2(const cublasHandle_t &handle,float *c, const float *a, const float *b, unsigned int WA, unsigned int HA, unsigned int WB,
+                           unsigned int HB);
+
 }
 
 

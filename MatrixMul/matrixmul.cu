@@ -184,15 +184,19 @@ cudaError_t addWithCuda(float *c, const float *a, const float *b, unsigned int W
     }
 
     if(mode==Mode3){
+        clock_t start = clock();
+
         cublasHandle_t handle;
         cublasCreate(&handle);
+        clock_t time_used = clock() - start;
+        printf("(GPU31) time:%ld\n", time_used);
+
         float alpha = 1.0;
         float beta = 0.0;
         fprintf(stderr, "aaaaaaaaaaaaaa!");
-        clock_t start = clock();
+        start = clock();
 
-
-        clock_t time_used;
+        //clock_t time_used;
 
         cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,WA, HA, WB, &alpha, dev_b, HA, dev_a, HA, &beta, dev_c, HA);
 
@@ -236,4 +240,58 @@ cudaError_t addWithCuda(float *c, const float *a, const float *b, unsigned int W
     cudaFree(dev_b);
 
     return cudaStatus;
+}
+
+cublasStatus_t addWithCuda2(const cublasHandle_t &handle,float *c, const float *a, const float *b, unsigned int WA, unsigned int HA, unsigned int WB,
+                           unsigned int HB) {
+
+    float *dev_a = 0;
+    float *dev_b = 0;
+    float *dev_c = 0;
+    cudaError_t cudaStatus;
+    cublasStatus_t cublasStatus;
+
+
+    // Allocate GPU buffers for three vectors (two input, one output)    .
+    cudaStatus = cudaMalloc((void **) &dev_c, HA * WB * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        // Error;
+    }
+
+    cudaStatus = cudaMalloc((void **) &dev_a, HA * WA * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        //goto Error;
+    }
+
+    cudaStatus = cudaMalloc((void **) &dev_b, HB * WB * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        //goto Error;
+    }
+
+    cublasSetVector(HA * WA, sizeof(float), a, 1, dev_a, 1);
+    cublasSetVector(HB * WB, sizeof(float), b, 1, dev_b, 1);
+    // 同步函数
+    cudaThreadSynchronize();
+
+    float alpha = 1.0;
+    float beta = 0.0;
+    clock_t start = clock();
+
+    cublasStatus = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, WA, HA, WB, &alpha, dev_b, HA, dev_a, HA, &beta, dev_c,
+                                   HA);
+
+    cudaThreadSynchronize();
+
+    clock_t time_used = clock() - start;
+    printf("(GPU31) time:%ld\n", time_used);
+    cudaThreadSynchronize();
+    cublasGetVector(HA * WB, sizeof(float), dev_c, 1,c, 1);
+    //Error:
+    cudaFree(dev_c);
+    cudaFree(dev_a);
+    cudaFree(dev_b);
+    return cublasStatus;
 }

@@ -54,6 +54,19 @@ find_package(OpenCV)
 
 # Specify binary name and source file to build it from
 #add_library(utils utils.cpp)
+
+
+LIST(APPEND CUDA_NVCC_FLAGS --compiler-options -fno-strict-aliasing -lineinfo  -use_fast_math -Xptxas -dlcm=cg)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_20,code=sm_20)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_30,code=sm_30)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_35,code=sm_35)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_50,code=sm_50)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_52,code=sm_52)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_60,code=sm_60)
+LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_61,code=sm_61)
+
+link_libraries(/usr/local/cuda/lib64)
+
 cuda_add_executable(
         mul_cublas
         test.cpp mul_cublas.cu)
@@ -61,9 +74,13 @@ cuda_add_executable(
 #        mul_cublas2
 #        test.cpp )
 ##target_link_libraries(matrixmul ${OpenCV_LIBS})
-target_link_libraries(mul_cublas /usr/local/cuda-8.0/lib64/libcublas.so ${OpenCV_LIBS})
+target_link_libraries(mul_cublas cublas ${OpenCV_LIBS})
 
 #target_link_libraries(mul_cublas2 /usr/local/cuda-8.0/lib64/libcublas.so ${OpenCV_LIBS})
+cuda_add_executable(
+        mul_cublas222
+        cublasSgemm.cu mul_cublas.cu)
+target_link_libraries(mul_cublas222 cublas ${OpenCV_LIBS})
 
 #cuda_add_executable(cublas_test cublas_test.cpp)
 #target_link_libraries(cublas_test /usr/local/cuda-8.0/lib64/libcublas.so)
