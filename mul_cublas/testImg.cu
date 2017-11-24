@@ -170,10 +170,10 @@ void gpu_memory_alloc(size_t len, T *&ptr) {
 
 #define CUDA_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
-  do { \
-    cudaError_t error = condition; \
-    std::cout<< " log:" << cudaGetErrorString(error)<<std::endl; \
-  } while (0)
+//  do {\
+//    cudaError_t error = condition; \
+//    //std::cout<< " log:" << cudaGetErrorString(error)<<std::endl; \
+//  } while (0)
 
 #define CUBLAS_CHECK(condition) \
   do { \
@@ -435,7 +435,7 @@ run(const cublasHandle_t &handle, float *dev_data, int *dev_data_h, int *dev_dat
     int kern = dev_cnn_model.model_len[ID].k1;
     int in_len = dev_cnn_model.model_len[ID].in_len;
     int out_len = dev_cnn_model.model_len[ID].out_len;
-    printf("aa\n");
+    //printf("aa\n");
 
     im2col_gpu(dev_data, in_len, *dev_data_h, *dev_data_w, kern, pad, stride, dev_data1, h_out, w_out);
 //    float *b = (float *) malloc(sizeof(float) * 1000);
@@ -447,7 +447,7 @@ run(const cublasHandle_t &handle, float *dev_data, int *dev_data_h, int *dev_dat
 //
 //    }
 
-    printf("aaa");
+    //printf("aaa");
     float alpha = 1.0;
     float beta = 0.0;
     clock_t start = clock();
@@ -533,9 +533,11 @@ void runFace(const cublasHandle_t &handle, float *dataIn, int w, int h, int c, c
     float *data_cp = dev_cnn_data.data_cp;
 
 
+
+    double Time = (double) cvGetTickCount();
     cudaMemcpy(data, dataIn, sizeof(float) * w * h * c, cudaMemcpyHostToDevice);
 
-    cudaThreadSynchronize();
+    //cudaThreadSynchronize();
     //printf("ccc\n");
 
 
@@ -543,7 +545,7 @@ void runFace(const cublasHandle_t &handle, float *dataIn, int w, int h, int c, c
     run(handle, data, &data_h, &data_w, data1, dstdata, dev_cnn_model, 0, 1, 2, &h_out, &w_out);
 //cudaMemcpy(data_cp, dstdata, dev_cnn_model.model_len[0].out_len * h_out * w_out * sizeof(float));
     cudaMemcpy(data_cp,dstdata,dev_cnn_model.model_len[0].out_len * h_out * w_out * sizeof(float),cudaMemcpyDeviceToDevice);
-    cudaThreadSynchronize();
+    //cudaThreadSynchronize();
 
     //c_1_2
     change_zhizheng(&data, &dstdata, data_h, data_w, h_out, w_out);
@@ -574,7 +576,7 @@ void runFace(const cublasHandle_t &handle, float *dataIn, int w, int h, int c, c
     change_zhizheng(&data, &dstdata, data_h, data_w, h_out, w_out);
     run(handle,data, &data_h, &data_w, data1, dstdata, dev_cnn_model, 5, 1, 1, &h_out, &w_out);
     //res_2_3
-    cudaThreadSynchronize();
+    //cudaThreadSynchronize();
 
     /*{
         //res_2_3
@@ -600,7 +602,7 @@ void runFace(const cublasHandle_t &handle, float *dataIn, int w, int h, int c, c
 
 
 
-    cudaThreadSynchronize();
+    //cudaThreadSynchronize();
 
 
 //    p = data_cp;
@@ -615,7 +617,7 @@ void runFace(const cublasHandle_t &handle, float *dataIn, int w, int h, int c, c
 
 
     cudaMemcpy(data_cp, dstdata, dev_cnn_model.model_len[3].out_len * h_out * w_out * sizeof(float),cudaMemcpyDeviceToDevice);
-    cudaThreadSynchronize();
+    //cudaThreadSynchronize();
 
     //c_2-4
     change_zhizheng(&data, &dstdata, data_h, data_w, h_out, w_out);
@@ -730,18 +732,57 @@ void runFace(const cublasHandle_t &handle, float *dataIn, int w, int h, int c, c
 
     cublasStatus_t cublasStatus;
 
+    //Time = (double) cvGetTickCount();
 
     //run_gemm(cnn_model.CNN_fc_w, data, dstdata, FC_W_W, 1, FC_W_H, 1);
     cublasStatus = run_cublasgemm(handle, dev_cnn_model.CNN_fc_w, data, dstdata,FC_W_W,1,
                                   FC_W_H, 1);
 
+    //float *tmpdata;
+
+    //float *dev_tmpdata;
+    //cudaHostGetDevicePointer((void**)&dev_tmpdata, (void*)dataOut, 0);
+
     ADD_G(dstdata,dev_cnn_model.CNN_fc_b,FC_W_W,dstdata);
 
-    float *dd= (float *) malloc(FC_W_W * sizeof(float));
-    cudaMemcpy(dd,dstdata,FC_W_W * sizeof(float),cudaMemcpyDeviceToHost);
-    for (int k = 0; k < FC_W_W; ++k) {
-        printf("dd:%d:%f\n",k,dd[k]);
-    }
+    //cudaDeviceSynchronize();
+
+    //cudaDeviceSynchronize
+
+    Time = (double) cvGetTickCount() - Time;
+    printf("run time11 = %gms\n", Time / (cvGetTickFrequency() * 1000));
+
+
+    Time = (double) cvGetTickCount();
+    //float *dd= (float *) malloc(FC_W_W * sizeof(float));
+    //cudaMemcpy(dataOut,dstdata,FC_W_W * sizeof(float),cudaMemcpyDeviceToHost);
+
+    //cudaHostGetDevicePointer(&dataOut, dstdata, 0);
+
+//    cudaMemcpyAsync( dataOut, dstdata,
+//                                 FC_W_W * sizeof(float),
+//                     cudaMemcpyDeviceToHost,
+//                                 stream );
+//    cudaStreamSynchronize( stream ) ;
+
+
+    cudaMemcpy(dataOut, dstdata, FC_W_W * sizeof(float), cudaMemcpyDefault);
+//    //    cudaStreamSynchronize( stream ) ;
+
+
+
+
+    Time = (double) cvGetTickCount() - Time;
+    printf("run time21 = %gms\n", Time / (cvGetTickFrequency() * 1000));
+
+    printf("dd:%d:%f\n",511,dataOut[511]);
+
+//    for (int k = 0; k < FC_W_W; ++k) {
+//        printf("dd:%d:%f\n",k,dataOut[k]);
+//    }
+
+
+
 
 
 
@@ -838,7 +879,6 @@ int main() {
     rgb2Mat(bgr, bgr_mat);
 
 
-    //double Time = (double) cvGetTickCount();
 
     int w = bgr->width;
     int h = bgr->height;
@@ -888,10 +928,28 @@ int main() {
 
 
     const int FEA_LEN = 512;
+
+    //float *fea;
+    //cudaHostAlloc((void**)&fea,FEA_LEN * sizeof(float));
+    //cudaMallocHost((void **)&fea, sizeof(float)*FEA_LEN, cudaHostAllocMapped);
+
     float *fea = (float *) malloc(FEA_LEN * sizeof(float));
+   // double Time = (double) cvGetTickCount();
+            //
+            cudaStream_t stream;
+            cudaStreamCreate( &stream ) ;
     runFace(handle, dataIn, w, h, c, dev_cnn_model, dev_cnn_data, fea, FEA_LEN);
+    printf("%f\n",fea[511]);
+    //cudaStreamSynchronize( stream ) ;
 
 
-    getchar();
+    //cudaFreeHost(fea);
+   // cudaStreamDestroy( stream );
+
+//    for (int l = 0; l < 512; ++l) {
+//        printf("%f\n",fea[l]);
+//    }
+
+    //getchar();
     printf("ok!\n");
 }
