@@ -77,10 +77,16 @@ cuda_add_executable(
 target_link_libraries(mul_cublas cublas ${OpenCV_LIBS})
 
 #target_link_libraries(mul_cublas2 /usr/local/cuda-8.0/lib64/libcublas.so ${OpenCV_LIBS})
+#cuda_add_executable(
+#        mul_cublas222
+#         mul_cublas.cu)
+#target_link_libraries(mul_cublas222 cublas ${OpenCV_LIBS})
+
+
 cuda_add_executable(
-        mul_cublas222
-        cublasSgemm.cu mul_cublas.cu)
-target_link_libraries(mul_cublas222 cublas ${OpenCV_LIBS})
+        testImg
+        testImg.cu)
+target_link_libraries(testImg cublas ${OpenCV_LIBS})
 
 #cuda_add_executable(cublas_test cublas_test.cpp)
 #target_link_libraries(cublas_test /usr/local/cuda-8.0/lib64/libcublas.so)
